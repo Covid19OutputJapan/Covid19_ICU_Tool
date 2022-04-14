@@ -44,7 +44,6 @@ num_scenarios = len(BRNs)
 # https://docs.google.com/spreadsheets/d/1OOwRFo5sh_kaDQF79BdpAHhI_WXXcXpV5tj4NXYQBHk/edit?usp=sharing
 df = pd.read_csv('data.csv')
 df['date'] = pd.to_datetime(df['date'])
-df['date'] = pd.to_datetime(df['date'])
 df_pref = df[df['prefectureNameJ'] == pref_name_JP].reset_index(drop=True)
 df_pref_name = pd.read_csv('pref_name.csv')
 pref_name_JP_list = df_pref_name['都道府県'].dropna().tolist()

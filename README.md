@@ -2,7 +2,7 @@
 [入院患者数・重症患者数見通しツール](https://covid19-icu-tool.herokuapp.com/) で使用しているモデルのソースコードです。  
 
 使用しているモデルの詳細・パラメターの推定方法に関してはこちらの[論文](https://covid19outputjapan.github.io/JP/files/FujiiNakata_20210811.pdf)をご覧ください。  
-本ツールの目的・ツールの使い方・データの出典等にこちらの[参考資料](https://covid19outputjapan.github.io/JP/files/NakataOkamoto_Briefing_20220413.pdf)をご覧ください。  
+本ツールの目的・ツールの使い方・データの出典等に関してはこちらの[参考資料](https://covid19outputjapan.github.io/JP/files/NakataOkamoto_Briefing_20220413.pdf)をご覧ください。  
 
 なお、研究チームでは毎週本ツールを使用して47都道府県の病床見通しを公表する予定です。[ウェブサイト](https://covid19outputjapan.github.io/JP/index.html)をご確認ください。
 

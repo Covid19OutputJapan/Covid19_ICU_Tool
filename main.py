@@ -30,20 +30,20 @@ today = datetime.datetime.today()
 T_sim = 7*8  # シミュレーション期間（日）
 T_sim_weekly = 8  # シミュレーション期間（週）
 T_beta_target = 7*2  # 基本再生産数が何日で BRN_target に到達するか
+T_delta_target = 2  # 入院率・重症化率・致死率が何週間で delta_target に到達するか
 W_V = 7  # ワクチンの接種スピードについて、直近何日分の平均を取るか
 
-pref_name_JP = '北海道'
-BRNs = [2.6, 2.9, 3.1]  # 楽観シナリオ, 基本シナリオ, 悲観シナリオ
+pref_name_JP = '東京都'
+BRNs = [3.35, 3.4, 3.45]  # 楽観シナリオ, 基本シナリオ, 悲観シナリオ
 colors = ['b', 'g', 'r']
 num_scenarios = len(BRNs)
 
 
 ''' データの読み込み '''
 # data.csv の最新版については、各自で用意する必要があります。
-# 以下のスプレッドシートから"data" シートをダウンロードしてディレクトリ直下に置いてください。
+# 以下のスプレッドシートから "data" シートをダウンロードしてディレクトリ直下に置いてください。
 # https://docs.google.com/spreadsheets/d/1OOwRFo5sh_kaDQF79BdpAHhI_WXXcXpV5tj4NXYQBHk/edit?usp=sharing
 df = pd.read_csv('data.csv')
-df['date'] = pd.to_datetime(df['date'])
 df['date'] = pd.to_datetime(df['date'])
 df_pref = df[df['prefectureNameJ'] == pref_name_JP].reset_index(drop=True)
 df_pref_name = pd.read_csv('pref_name.csv')
@@ -149,15 +149,21 @@ date_index_pred = pd.date_range(last_date, sim_end_date)
 wave_start_idx_weekly = np.where(week_index == graph_start_date)[0][0]
 N_weekly_6th_wave = N_weekly[wave_start_idx_weekly-1:-2]
 
-# 入院率の見通し（第六波の加重平均）
-delta_H_weekly_pred = np.average(delta_H_weekly[wave_start_idx_weekly:], weights=N_weekly_6th_wave)
+# 入院率の見通し
+delta_H_weekly_avg = np.average(delta_H_weekly[wave_start_idx_weekly:], weights=N_weekly_6th_wave)
+delta_H_weekly_pred = util.calc_beta_pred(delta_H_weekly, delta_H_weekly_avg, W=T_delta_target, T=T_sim_weekly)
+delta_H_weekly_pred_half = util.calc_beta_pred(delta_H_weekly, delta_H_weekly_avg/2, W=T_delta_target, T=T_sim_weekly)
+
+# 重症化率の見通し
 H_weekly_6th_wave = H_weekly[wave_start_idx_weekly-1:-2]
+delta_ICU_weekly_avg = np.average(delta_ICU_weekly[wave_start_idx_weekly:], weights=H_weekly_6th_wave)
+delta_ICU_weekly_pred = util.calc_beta_pred(delta_ICU_weekly, delta_ICU_weekly_avg, W=T_delta_target, T=T_sim_weekly)
+delta_ICU_weekly_pred_half = util.calc_beta_pred(delta_ICU_weekly, delta_ICU_weekly_avg/2, W=T_delta_target, T=T_sim_weekly)
 
-# 重症化率の見通し（第六波の加重平均）
-delta_ICU_weekly_pred = np.average(delta_ICU_weekly[wave_start_idx_weekly:], weights=H_weekly_6th_wave)
-
-# 致死率の見通し（第六波の加重平均）
-delta_D_weekly_pred = np.average(delta_D_weekly[wave_start_idx_weekly:], weights=H_weekly_6th_wave)
+# 致死率の見通し
+delta_D_weekly_avg = np.average(delta_D_weekly[wave_start_idx_weekly:], weights=H_weekly_6th_wave)
+delta_D_weekly_pred = util.calc_beta_pred(delta_D_weekly, delta_D_weekly_avg, W=T_delta_target, T=T_sim_weekly)
+delta_D_weekly_pred_half = util.calc_beta_pred(delta_D_weekly, delta_D_weekly_avg/2, W=T_delta_target, T=T_sim_weekly)
 
 last_date_weekly = df_pref_weekly['date'].iloc[-1]
 diff_days = (last_date - last_date_weekly).days
@@ -195,10 +201,10 @@ for i, BRN_target in enumerate(BRNs):
     H_weekly_pred_half[i] = util.pred_H_weekly(N_weekly_pred[i], H_weekly, gamma_H, delta_H_weekly_pred/2, T_sim_weekly)
     # 重症患者数の見通し計算
     ICU_weekly_pred[i] = util.pred_ICU_weekly(ICU_weekly, H_weekly_pred[i], gamma_ICU, delta_ICU_weekly_pred, T_sim_weekly)
-    ICU_weekly_pred_half[i] = util.pred_ICU_weekly(ICU_weekly, H_weekly_pred[i], gamma_ICU, delta_ICU_weekly_pred/2, T_sim_weekly)
+    ICU_weekly_pred_half[i] = util.pred_ICU_weekly(ICU_weekly, H_weekly_pred[i], gamma_ICU, delta_ICU_weekly_pred_half, T_sim_weekly)
     # 新規死亡者数の見通し計算
     dD_weekly_pred[i] = util.pred_dD_weekly(dD_weekly, H_weekly_pred[i], delta_D_weekly_pred, T_sim_weekly)
-    dD_weekly_pred_half[i] = util.pred_dD_weekly(dD_weekly, H_weekly_pred[i], delta_D_weekly_pred/2, T_sim_weekly)
+    dD_weekly_pred_half[i] = util.pred_dD_weekly(dD_weekly, H_weekly_pred[i], delta_D_weekly_pred_half, T_sim_weekly)
 
 
 ''' グラフの出力 '''
@@ -327,8 +333,8 @@ plt.xticks(rotation=45)
 plt.subplot(3, 4, 10)
 plt.title(f'入院率の推移（{pref_name_JP})')
 plt.plot(week_index[1:], delta_H_weekly, c='black')
-plt.plot(week_index_pred, delta_H_weekly_pred * np.ones(week_index_pred.shape[0]), color='blue')
-plt.plot(week_index_pred, delta_H_weekly_pred * np.ones(week_index_pred.shape[0]) / 2, color='blue', linewidth=0.5)
+plt.plot(week_index_pred, delta_H_weekly_pred, color='blue')
+plt.plot(week_index_pred, delta_H_weekly_pred_half, color='blue', linewidth=0.5)
 plt.xlim([graph_start_date, sim_end_date_weekly])
 plt.axvline(x=last_date_weekly, c='black', linewidth=0.5)
 plt.xticks(rotation=45)
@@ -337,22 +343,22 @@ plt.ylim([0, 0.1])
 plt.subplot(3, 4, 11)
 plt.title(f'重症化率の推移（{pref_name_JP})')
 plt.plot(week_index[1:], delta_ICU_weekly, c='black')
-plt.plot(week_index_pred, delta_ICU_weekly_pred * np.ones(week_index_pred.shape[0]), color='blue')
-plt.plot(week_index_pred, delta_ICU_weekly_pred * np.ones(week_index_pred.shape[0]) / 2, color='blue', linewidth=0.5)
+plt.plot(week_index_pred, delta_ICU_weekly_pred, color='blue')
+plt.plot(week_index_pred, delta_ICU_weekly_pred_half, color='blue', linewidth=0.5)
 plt.xlim([graph_start_date, sim_end_date_weekly])
 plt.axvline(x=last_date_weekly, c='black', linewidth=0.5)
 plt.xticks(rotation=45)
-y_max = delta_ICU_weekly_pred * 2
+y_max = delta_ICU_weekly_pred.max() * 2
 plt.ylim([0, y_max])
 
 plt.subplot(3, 4, 12)
 plt.title(f'致死率の推移（{pref_name_JP})')
 plt.plot(week_index[1:], delta_D_weekly / 7, c='black')
-plt.plot(week_index_pred, delta_D_weekly_pred / 7 * np.ones(week_index_pred.shape[0]), color='blue')
-plt.plot(week_index_pred, delta_D_weekly_pred / 7 * np.ones(week_index_pred.shape[0]) / 2, color='blue', linewidth=0.5)
+plt.plot(week_index_pred, delta_D_weekly_pred / 7, color='blue')
+plt.plot(week_index_pred, delta_D_weekly_pred_half / 7, color='blue', linewidth=0.5)
 plt.xlim([graph_start_date, sim_end_date_weekly])
 plt.axvline(x=last_date_weekly, c='black', linewidth=0.5)
 plt.xticks(rotation=45)
-y_max = delta_D_weekly_pred / 7 * 2
+y_max = delta_D_weekly_pred.max() / 7 * 2
 plt.ylim([0, y_max])
 plt.show()

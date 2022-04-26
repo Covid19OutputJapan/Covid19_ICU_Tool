@@ -25,6 +25,8 @@ epsilon_e3 = epsilon_o3  # ワクチン3回目の感染予防効果（高齢者�
 
 vaccine_3rd_share_max = 70 / 100  # ワクチン3回目の接種率上限
 graph_start_date = datetime.datetime(2021, 12, 15)
+wave_start_date = datetime.datetime(2021, 12, 15)
+wave_end_date = datetime.datetime(2022, 4, 13)
 today = datetime.datetime.today()
 
 T_sim = 7*8  # シミュレーション期間（日）
@@ -78,7 +80,8 @@ beta = util.calc_beta(S, I, N, P)
 BRN = beta / gamma
 ERN = BRN * S / P
 date_index = df_pref['date']
-wave_start_idx = np.where(date_index == graph_start_date)[0][0]
+wave_start_idx = np.where(date_index == wave_start_date)[0][0]
+wave_end_idx = np.where(date_index == wave_end_date)[0][0]
 last_date = date_index.iloc[-1]
 
 ### Weekly data ###
@@ -146,22 +149,24 @@ epsilon_e1 * (V_e1_pred-V_e2_pred) + epsilon_e2 * (V_e2_pred-V_e3_pred) + epsilo
 sim_end_date = last_date + datetime.timedelta(days=T_sim)
 date_index_pred = pd.date_range(last_date, sim_end_date)
 
-wave_start_idx_weekly = np.where(week_index == graph_start_date)[0][0]
-N_weekly_6th_wave = N_weekly[wave_start_idx_weekly-1:-2]
+wave_start_idx_weekly = np.where(week_index == wave_start_date)[0][0]
+wave_end_idx_weekly = np.where(week_index == wave_end_date)[0][0]
+
+N_weekly_6th_wave = N_weekly[wave_start_idx_weekly-1:wave_end_idx_weekly]
 
 # 入院率の見通し
-delta_H_weekly_avg = np.average(delta_H_weekly[wave_start_idx_weekly:], weights=N_weekly_6th_wave)
+delta_H_weekly_avg = np.average(delta_H_weekly[wave_start_idx_weekly:wave_end_idx_weekly+1], weights=N_weekly_6th_wave)
 delta_H_weekly_pred = util.calc_beta_pred(delta_H_weekly, delta_H_weekly_avg, W=T_delta_target, T=T_sim_weekly)
 delta_H_weekly_pred_half = util.calc_beta_pred(delta_H_weekly, delta_H_weekly_avg/2, W=T_delta_target, T=T_sim_weekly)
 
 # 重症化率の見通し
-H_weekly_6th_wave = H_weekly[wave_start_idx_weekly-1:-2]
-delta_ICU_weekly_avg = np.average(delta_ICU_weekly[wave_start_idx_weekly:], weights=H_weekly_6th_wave)
+H_weekly_6th_wave = H_weekly[wave_start_idx_weekly-1:wave_end_idx_weekly]
+delta_ICU_weekly_avg = np.average(delta_ICU_weekly[wave_start_idx_weekly:wave_end_idx_weekly+1], weights=H_weekly_6th_wave)
 delta_ICU_weekly_pred = util.calc_beta_pred(delta_ICU_weekly, delta_ICU_weekly_avg, W=T_delta_target, T=T_sim_weekly)
 delta_ICU_weekly_pred_half = util.calc_beta_pred(delta_ICU_weekly, delta_ICU_weekly_avg/2, W=T_delta_target, T=T_sim_weekly)
 
 # 致死率の見通し
-delta_D_weekly_avg = np.average(delta_D_weekly[wave_start_idx_weekly:], weights=H_weekly_6th_wave)
+delta_D_weekly_avg = np.average(delta_D_weekly[wave_start_idx_weekly:wave_end_idx_weekly+1], weights=H_weekly_6th_wave)
 delta_D_weekly_pred = util.calc_beta_pred(delta_D_weekly, delta_D_weekly_avg, W=T_delta_target, T=T_sim_weekly)
 delta_D_weekly_pred_half = util.calc_beta_pred(delta_D_weekly, delta_D_weekly_avg/2, W=T_delta_target, T=T_sim_weekly)
 

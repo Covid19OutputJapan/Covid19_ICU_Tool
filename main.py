@@ -35,19 +35,16 @@ T_beta_target = 7*2  # 基本再生産数が何日で BRN_target に到達する
 T_delta_target = 2  # 入院率・重症化率・致死率が何週間で delta_target に到達するか
 W_V = 7  # ワクチンの接種スピードについて、直近何日分の平均を取るか
 
-pref_name_JP = '東京都'
+pref_name_JP = '兵庫県'
 BRNs = [3.35, 3.4, 3.45]  # 楽観シナリオ, 基本シナリオ, 悲観シナリオ
 colors = ['b', 'g', 'r']
 num_scenarios = len(BRNs)
 
 
 ''' データの読み込み '''
-# data.csv の最新版については、各自で用意する必要があります。
-# 以下のスプレッドシートから "data" シートをダウンロードしてディレクトリ直下に置いてください。
-# https://docs.google.com/spreadsheets/d/1OOwRFo5sh_kaDQF79BdpAHhI_WXXcXpV5tj4NXYQBHk/edit?usp=sharing
-df = pd.read_csv('data.csv')
+df = pd.read_csv('https://docs.google.com/spreadsheets/d/1OOwRFo5sh_kaDQF79BdpAHhI_WXXcXpV5tj4NXYQBHk/export?format=csv&gid=1016364865')
 df['date'] = pd.to_datetime(df['date'])
-df_pref = df[df['prefectureNameJ'] == pref_name_JP].reset_index(drop=True)
+df_pref = df[df['都道府県'] == pref_name_JP].reset_index(drop=True)
 df_pref_name = pd.read_csv('pref_name.csv')
 pref_name_JP_list = df_pref_name['都道府県'].dropna().tolist()
 
@@ -61,6 +58,16 @@ V_o3 = df_pref['V_o3'].values
 V_e1 = df_pref['V_e1'].values
 V_e2 = df_pref['V_e2'].values
 V_e3 = df_pref['V_e3'].values
+V_u1 = df_pref['V_u1'].values
+V_u2 = df_pref['V_u2'].values
+V_u3 = df_pref['V_u3'].values
+V_m1 = df_pref['V_m1'].values
+V_m2 = df_pref['V_m2'].values
+
+V_o1 = V_o1 + V_u1 + V_m1
+V_o2 = V_o2 + V_u2 + V_m2
+V_o3 = V_o3 + V_u3
+
 V_2 = V_o2 + V_e2
 V_3 = V_o3 + V_e3
 
@@ -200,7 +207,7 @@ for i, BRN_target in enumerate(BRNs):
     ERN_pred[i] = BRN_pred[i] * S_pred[i] / P
 
     # 新規陽性者数のシナリオ作成
-    N_weekly_pred[i] = np.hstack([N[-diff_days:], N_pred[i][1:]])[6::7] * 7
+    N_weekly_pred[i] = np.hstack([N[-diff_days:], N_pred[i][1:]])[6::7][:T_sim_weekly] * 7
     # 入院患者数の見通し計算
     H_weekly_pred[i] = util.pred_H_weekly(N_weekly_pred[i], H_weekly, gamma_H, delta_H_weekly_pred, T_sim_weekly)
     H_weekly_pred_half[i] = util.pred_H_weekly(N_weekly_pred[i], H_weekly, gamma_H, delta_H_weekly_pred/2, T_sim_weekly)

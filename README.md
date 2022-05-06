@@ -15,7 +15,7 @@
 ~~1. [Google スプレッドシート](https://docs.google.com/spreadsheets/d/1OOwRFo5sh_kaDQF79BdpAHhI_WXXcXpV5tj4NXYQBHk/edit?usp=sharing)で最新の都道府県別データを確認する。~~  
 ~~2. シート名 `data` のワークシートを csv として download して、ディレクトリ直下に保存する。~~  
 ~~3. `main.py` を編集し、パラメータとシミュレーション対象の都道府県を設定する。~~  
-※ v1.3 から[COVID-19 Standard Dataset](https://docs.google.com/spreadsheets/d/1OOwRFo5sh_kaDQF79BdpAHhI_WXXcXpV5tj4NXYQBHk/edit?usp=sharing)を自動的に読み込むように仕様を変更したため、こちらのプロセスは不要になりました。
+※ v1.3 から [COVID-19 Standard Dataset](https://docs.google.com/spreadsheets/d/1OOwRFo5sh_kaDQF79BdpAHhI_WXXcXpV5tj4NXYQBHk/edit?usp=sharing) を自動的に読み込むように仕様を変更したため、こちらのプロセスは不要になりました。
 
 4. コードを実行する。
 ```
